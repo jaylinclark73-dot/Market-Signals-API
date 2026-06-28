@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.routers import signals, auth, health
 from app.core.config import settings
-import time
+from app.core.database import create_tables
 
 app = FastAPI(
     title="Market Signals API",
@@ -19,6 +19,10 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup():
+    create_tables()
 
 app.include_router(health.router, tags=["health"])
 app.include_router(auth.router, prefix="/v1/auth", tags=["auth"])
