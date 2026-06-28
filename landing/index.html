@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Signals API — Scored trade signals in one API call</title>
+  <meta name="description" content="Stop parsing raw data. Get a scored, explainable trading signal for any ticker in one GET request. Used by trading apps, Discord bots, and retail traders." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #161a23;
+      --surface2: #1e2330;
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f2f7;
+      --muted: #8891a4;
+      --accent: #3b82f6;
+      --accent-light: #93c5fd;
+      --green: #22c55e;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent-light); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Nav */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; background: var(--bg); z-index: 100;
+    }
+    .logo { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+    .logo span { color: var(--accent); }
+    .nav-links { display: flex; gap: 2rem; font-size: 14px; color: var(--muted); }
+    .nav-links a { color: var(--muted); }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+    .nav-cta {
+      background: var(--accent); color: #fff; font-size: 14px; font-weight: 500;
+      padding: 8px 18px; border-radius: var(--radius); border: none; cursor: pointer;
+    }
+
+    /* Hero */
+    .hero {
+      max-width: 780px; margin: 0 auto; text-align: center;
+      padding: 6rem 2rem 4rem;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500; color: var(--accent-light);
+      background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25);
+      padding: 4px 12px; border-radius: 20px; margin-bottom: 1.5rem;
+    }
+    .badge::before { content: "●"; font-size: 8px; color: var(--green); }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 700;
+      line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 1.25rem;
+    }
+    h1 em { color: var(--accent-light); font-style: normal; }
+    .hero-sub {
+      font-size: 18px; color: var(--muted); max-width: 560px;
+      margin: 0 auto 2.5rem; line-height: 1.65;
+    }
+    .hero-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--accent); color: #fff; font-size: 15px; font-weight: 500;
+      padding: 12px 28px; border-radius: var(--radius); border: none; cursor: pointer;
+    }
+    .btn-secondary {
+      background: transparent; color: var(--muted); font-size: 15px;
+      padding: 12px 28px; border-radius: var(--radius);
+      border: 1px solid var(--border); cursor: pointer;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+    /* Code demo */
+    .demo-wrap {
+      max-width: 860px; margin: 4rem auto; padding: 0 2rem;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 640px) { .demo-wrap { grid-template-columns: 1fr; } }
+    .code-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem 1.5rem;
+      font-family: "SF Mono", "Fira Code", monospace; font-size: 13px;
+      line-height: 1.7; overflow-x: auto;
+    }
+    .code-block .label {
+      font-family: -apple-system, sans-serif; font-size: 11px; font-weight: 600;
+      color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase;
+      margin-bottom: 10px; display: block;
+    }
+    .c-method { color: #86efac; }
+    .c-path   { color: #93c5fd; }
+    .c-key    { color: #94a3b8; }
+    .c-str    { color: #fde68a; }
+    .c-num    { color: #6ee7b7; }
+    .c-bull   { color: #86efac; }
+    .c-bear   { color: #fca5a5; }
+    .c-neu    { color: #94a3b8; }
+
+    /* Logos / social proof */
+    .proof {
+      text-align: center; padding: 3rem 2rem; border-top: 1px solid var(--border);
+    }
+    .proof p { font-size: 13px; color: var(--muted); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .proof-logos { display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap; }
+    .proof-logo { font-size: 14px; font-weight: 600; color: #3d4455; }
+
+    /* Features */
+    .features {
+      max-width: 900px; margin: 0 auto; padding: 5rem 2rem;
+    }
+    .section-tag { font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .section-title { font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
+    .section-sub { font-size: 16px; color: var(--muted); max-width: 520px; }
+    .feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 3rem; }
+    .feat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem;
+    }
+    .feat-icon { font-size: 22px; margin-bottom: 10px; }
+    .feat-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.55; }
+
+    /* Pricing */
+    .pricing {
+      max-width: 900px; margin: 0 auto; padding: 5rem 2rem;
+      border-top: 1px solid var(--border);
+    }
+    .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-top: 3rem; }
+    .plan {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem 1.25rem;
+    }
+    .plan.featured { border-color: var(--accent); }
+    .plan-name { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .plan-price { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; }
+    .plan-price span { font-size: 14px; font-weight: 400; color: var(--muted); }
+    .plan-sep { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+    .plan-feat { font-size: 13px; color: var(--muted); margin-bottom: 6px; display: flex; gap: 6px; }
+    .plan-feat::before { content: "✓"; color: var(--green); flex-shrink: 0; }
+    .popular { font-size: 11px; background: rgba(59,130,246,0.15); color: var(--accent-light); padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+
+    /* CTA banner */
+    .cta-banner {
+      max-width: 680px; margin: 4rem auto; padding: 2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; text-align: center;
+    }
+    .cta-banner h2 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.75rem; }
+    .cta-banner p { color: var(--muted); font-size: 15px; margin-bottom: 1.5rem; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border); text-align: center;
+      padding: 2rem; font-size: 13px; color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Market<span>Signals</span></div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'})">Get API key</button>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="badge">Live signals · 5,000+ tickers</div>
+  <h1>Trade signals.<br><em>Not just data.</em></h1>
+  <p class="hero-sub">
+    Stop parsing candles yourself. Get a scored, explainable signal for any ticker in a single GET request — ready to plug into your app, bot, or site.
+  </p>
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="document.getElementById('register').scrollIntoView({behavior:'smooth'})">Get free API key</button>
+    <button class="btn-secondary" onclick="window.location='/docs'">View docs →</button>
+  </div>
+</section>
+
+<!-- Code demo -->
+<div class="demo-wrap">
+  <div class="code-block">
+    <span class="label">Request</span>
+<span class="c-method">GET</span> <span class="c-path">/v1/signals?ticker=AAPL</span>
+<span class="c-key">Authorization:</span> Bearer sk-mkt-xxxx
+  </div>
+  <div class="code-block">
+    <span class="label">Response</span>
+{
+  <span class="c-key">"ticker"</span>: <span class="c-str">"AAPL"</span>,
+  <span class="c-key">"score"</span>: <span class="c-num">92</span>,
+  <span class="c-key">"direction"</span>: <span class="c-bull">"bull"</span>,
+  <span class="c-key">"price"</span>: <span class="c-num">213.45</span>,
+  <span class="c-key">"signals"</span>: [
+    { <span class="c-key">"type"</span>: <span class="c-bull">"bull"</span>, <span class="c-key">"label"</span>: <span class="c-str">"Broke 200 EMA"</span> },
+    { <span class="c-key">"type"</span>: <span class="c-bull">"bull"</span>, <span class="c-key">"label"</span>: <span class="c-str">"Rel. volume 2.3x"</span> },
+    { <span class="c-key">"type"</span>: <span class="c-bull">"bull"</span>, <span class="c-key">"label"</span>: <span class="c-str">"Inst. buying"</span> }
+  ]
+}
+  </div>
+</div>
+
+<!-- Social proof -->
+<div class="proof">
+  <p>Built for</p>
+  <div class="proof-logos">
+    <span class="proof-logo">Trading apps</span>
+    <span class="proof-logo">Discord bots</span>
+    <span class="proof-logo">Financial sites</span>
+    <span class="proof-logo">Retail traders</span>
+    <span class="proof-logo">YouTubers</span>
+  </div>
+</div>
+
+<!-- Features -->
+<section class="features" id="features">
+  <div class="section-tag">Why Market Signals</div>
+  <h2 class="section-title">Everything raw data APIs don't give you</h2>
+  <p class="section-sub">Polygon and Yahoo give you OHLCV. We give you a score, a direction, and the reasons why.</p>
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🎯</div>
+      <div class="feat-title">0–100 score</div>
+      <div class="feat-desc">A single number that combines RSI, EMA crossovers, volume, and pattern detection. Instantly displayable.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">💬</div>
+      <div class="feat-title">Explainable signals</div>
+      <div class="feat-desc">Each score comes with a plain-English list of what drove it — great for Discord bots and app UIs.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">Real-time data</div>
+      <div class="feat-desc">Pro+ plans get live prices via Polygon.io. Free and Starter plans receive 5-minute delayed signals.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📦</div>
+      <div class="feat-title">Batch endpoint</div>
+      <div class="feat-desc">Pull signals for up to 10 tickers in one request. Perfect for watchlist screeners and portfolio dashboards.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔔</div>
+      <div class="feat-title">Webhooks</div>
+      <div class="feat-desc">Get notified when a ticker's score crosses a threshold. Push alerts to Slack, Discord, or your app.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔒</div>
+      <div class="feat-title">Secure by default</div>
+      <div class="feat-desc">API keys are hashed and never stored in plain text. Rate limits enforce your plan automatically.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+  <div class="section-tag">Pricing</div>
+  <h2 class="section-title">Start free. Scale when you're ready.</h2>
+  <p class="section-sub">No credit card to start. Upgrade anytime — cancel anytime.</p>
+  <div class="plan-grid">
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0</div>
+      <hr class="plan-sep">
+      <div class="plan-feat">10 calls / day</div>
+      <div class="plan-feat">5 tickers</div>
+      <div class="plan-feat">15-min delay</div>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price">$15 <span>/ mo</span></div>
+      <hr class="plan-sep">
+      <div class="plan-feat">500 calls / day</div>
+      <div class="plan-feat">50 tickers</div>
+      <div class="plan-feat">5-min delay</div>
+    </div>
+    <div class="plan featured">
+      <div class="popular">Most popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$49 <span>/ mo</span></div>
+      <hr class="plan-sep">
+      <div class="plan-feat">5,000 calls / day</div>
+      <div class="plan-feat">All tickers</div>
+      <div class="plan-feat">Real-time</div>
+      <div class="plan-feat">Batch endpoint</div>
+      <div class="plan-feat">Webhooks</div>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Growth</div>
+      <div class="plan-price">$99 <span>/ mo</span></div>
+      <hr class="plan-sep">
+      <div class="plan-feat">25,000 calls / day</div>
+      <div class="plan-feat">Portfolio alerts</div>
+      <div class="plan-feat">Priority support</div>
+    </div>
+    <div class="plan">
+      <div class="plan-name">Enterprise</div>
+      <div class="plan-price" style="font-size:18px; padding-top:6px">Contact us</div>
+      <hr class="plan-sep">
+      <div class="plan-feat">Unlimited calls</div>
+      <div class="plan-feat">White-label</div>
+      <div class="plan-feat">SLA + dedicated</div>
+    </div>
+  </div>
+</section>
+
+<!-- Register CTA -->
+<div class="cta-banner" id="register">
+  <h2>Get your free API key</h2>
+  <p>Start building in 30 seconds. No credit card required.</p>
+  <div style="display:flex; gap:10px; max-width:400px; margin:0 auto;">
+    <input id="email-input" type="email" placeholder="you@company.com"
+      style="flex:1; padding:10px 14px; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface2); color:var(--text); font-size:14px; outline:none;" />
+    <button class="btn-primary" onclick="registerKey()" style="white-space:nowrap">Get key →</button>
+  </div>
+  <div id="register-result" style="margin-top:1rem; font-size:13px; color:var(--accent-light);"></div>
+</div>
+
+<footer>
+  <p>© 2026 MarketSignals · <a href="/docs">API docs</a> · <a href="mailto:hello@yourdomain.com">Contact</a></p>
+</footer>
+
+<script>
+async function registerKey() {
+  const email = document.getElementById("email-input").value.trim();
+  const result = document.getElementById("register-result");
+  if (!email.includes("@")) {
+    result.style.color = "#fca5a5";
+    result.textContent = "Enter a valid email address.";
+    return;
+  }
+  result.style.color = "#93c5fd";
+  result.textContent = "Registering...";
+  try {
+    const resp = await fetch("/v1/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      result.style.color = "#86efac";
+      result.innerHTML = `Your API key: <strong style="font-family:monospace">${data.api_key}</strong><br><small style="color:#8891a4">Save this — it won't be shown again.</small>`;
+    } else {
+      result.style.color = "#fca5a5";
+      result.textContent = data.detail || "Something went wrong.";
+    }
+  } catch (e) {
+    result.style.color = "#fca5a5";
+    result.textContent = "Could not reach the server.";
+  }
+}
+</script>
+</body>
+</html>
